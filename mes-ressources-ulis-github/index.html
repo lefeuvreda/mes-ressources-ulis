@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#223b55">
+  <meta name="description" content="Cours, fiches méthodes et outils d'apprentissage au collège.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mes ressources">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Mes ressources · Collège</title>
+  <script defer src="config.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="cloud.js"></script>
+  <script defer src="content.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">M</span><div><strong>Mes ressources</strong><span>Apprendre à mon rythme</span></div></div>
+      <div class="top-right"><span class="offline-indicator" id="networkStatus" aria-live="polite"></span><button type="button" id="btnHelp" class="quiet-button">Mode d’emploi</button></div>
+    </header>
+    <main id="main" tabindex="-1">
+      <section id="browseView" class="browse-view" aria-label="Bibliothèque">
+        <div class="hero"><div><div class="eyebrow">MON ESPACE DE TRAVAIL</div><h1>Je retrouve mes cours et mes méthodes.</h1><p>Choisis ton niveau, puis une discipline. Les fiches s’ouvrent en un geste.</p></div><div class="hero-art" aria-hidden="true"><div class="stack stack-one"></div><div class="stack stack-two"></div><div class="stack stack-three"></div></div></div>
+        <div class="toolbar-panel">
+          <div class="row-heading"><h2>Mon niveau de classe</h2><span class="muted">Tu peux le modifier à tout moment</span></div>
+          <div class="grade-tabs" id="gradeTabs" role="group" aria-label="Niveau de classe"></div>
+          <div class="filters"><label class="searchbox"><span class="sr-only">Rechercher une ressource</span><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Rechercher un cours, un mot, une méthode…" autocomplete="off"></label><select id="typeFilter" aria-label="Type de ressource"><option value="all">Tous les supports</option><option value="cours">Cours</option><option value="methode">Fiches méthodes</option><option value="outil">Outils</option></select></div>
+        </div>
+        <div class="main-layout">
+          <aside class="subjects" aria-label="Disciplines"><h2>Disciplines</h2><div id="subjectButtons" class="subject-buttons"></div><div class="aside-tip"><strong>Conseil</strong><p>Utilise « Mes favoris » pour retrouver tes fiches importantes.</p></div></aside>
+          <section class="results" aria-live="polite"><div class="results-header"><div><span class="eyebrow" id="sectionEyebrow">BIBLIOTHÈQUE</span><h2 id="sectionTitle">Toutes les ressources</h2></div><span id="resultCount" class="count-pill"></span></div><div id="resourceGrid" class="resource-grid"></div><p id="emptyMessage" class="empty" hidden>Aucun support trouvé. Essaie un autre mot ou une autre discipline.</p></section>
+        </div>
+      </section>
+      <section id="readView" class="read-view" hidden aria-labelledby="readTitle">
+        <div class="reader-toolbar"><button type="button" id="btnBack" class="back-button">← Retour aux ressources</button><div class="reader-tools" aria-label="Outils de lecture"><button type="button" id="btnSmaller" title="Réduire la taille du texte" aria-label="Réduire la taille du texte">A−</button><button type="button" id="btnLarger" title="Agrandir la taille du texte" aria-label="Agrandir la taille du texte">A+</button><button type="button" id="btnSpacing" aria-pressed="false" title="Espacement des lignes">↕ Lignes</button><button type="button" id="btnComfort" aria-pressed="false" title="Fond de lecture doux">◐ Confort</button><button type="button" id="btnRead" title="Écouter la fiche">▶ Écouter</button></div></div>
+        <article id="article" class="article"><div class="article-head"><div class="eyebrow" id="readMeta"></div><h1 id="readTitle"></h1><p id="readSummary" class="article-summary"></p><button type="button" id="btnFavoriteRead" class="favorite-button">☆ Ajouter aux favoris</button></div><div class="article-body" id="articleBody"></div><div class="article-end">Tu peux revenir sur cette fiche aussi souvent que nécessaire.</div></article>
+      </section>
+      <section id="helpView" class="help-view" hidden><button type="button" id="btnHelpBack" class="back-button">← Retour</button><h1>Mode d’emploi</h1><div class="help-card"><h2>1. Retrouver une fiche</h2><p>Sélectionne ton niveau, une discipline, puis ouvre une carte. Utilise la recherche pour trouver un mot-clé.</p><h2>2. Adapter la lecture</h2><p>Dans une fiche, A+ agrandit le texte, « Lignes » augmente l’espacement, « Confort » change le fond, et « Écouter » lit le texte à voix haute lorsque l’appareil le permet.</p><h2>3. Mettre une fiche en favori</h2><p>Appuie sur l’étoile. Les favoris sont enregistrés uniquement sur cette tablette.</p><h2>4. Travailler sans connexion</h2><p>Les fiches publiées sont sauvegardées sur cette tablette après connexion. Lorsque le réseau revient, les nouveautés arrivent automatiquement. Hors ligne, la dernière version sauvegardée reste accessible.</p><h2>Confidentialité</h2><p>Cette application ne demande ni nom, ni mot de passe, ni information sur la situation scolaire ou médicale de l’élève. Elle conserve seulement le niveau, les réglages de lecture et les favoris localement sur l’appareil.</p></div></section>
+    </main>
+    <footer><span>Mes ressources · ULIS TSLA</span><span>Sans publicité · Sans compte élève</span></footer>
+  </div>
+</body>
+</html>
