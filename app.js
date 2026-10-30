@@ -90,6 +90,10 @@
     byId('btnComfort').addEventListener('click',()=>{state.comfort=!state.comfort;setReadingPrefs();});
     byId('btnRead').addEventListener('click',toggleSpeech);
     byId('btnFavoriteRead').addEventListener('click',()=>{if(state.current)toggleFav(state.current)});
+    byId('closeImageDialog').addEventListener('click',()=>byId('imageDialog').close());
+    byId('imageDialog').addEventListener('click',event=>{
+      if(event.target===byId('imageDialog'))byId('imageDialog').close();
+    });
     window.addEventListener('online',()=>{updateNetwork();void refreshCloud();});window.addEventListener('offline',updateNetwork);
     updateNetwork();renderGrades();renderSubjects();renderCards();setReadingPrefs();activateCloud();
     if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
@@ -159,7 +163,7 @@
         const box=node('div',block.kind);box.append(node('strong','',block.kind==='note'?'À retenir':'Exemple'),node('div','',block.text));body.append(box);
       } else if(block.kind==='image' && typeof block.src==='string'){
         const safe=allowedDocumentUrl(block.src);
-        if(safe){const fig=node('figure','figure');const img=node('img');img.src=safe;img.alt=block.alt||'Illustration pédagogique';img.loading='lazy';fig.append(img);if(block.caption)fig.append(node('figcaption','',block.caption));body.append(fig);}
+        if(safe)body.append(inlineImage(safe,block.alt||'Illustration pédagogique',block.caption||''));
       } else if(block.kind==='check'){
         const box=node('section','check');box.append(node('h2','','Je vérifie que j’ai compris'),node('p','',block.question));
         const btn=node('button','','Afficher la réponse');btn.type='button';
@@ -169,21 +173,55 @@
       }
     }
     if(Array.isArray(r.documents) && r.documents.length){
-      body.append(node('h2','','Documents complémentaires'));
+      const content=node('section','supplementary-media');
       const list=node('ul','document-list');
       for(const doc of r.documents){
         const url=allowedDocumentUrl(doc.url);
         if(!url)continue;
-        const li=node('li');const link=node('a','',doc.title||'Ouvrir un document');
-        link.href=url;link.target='_blank';link.rel='noopener noreferrer';li.append(link);list.append(li);
+        if(isImageUrl(url)){
+          // Les images jointes par « Importer et joindre à la fiche »
+          // apparaissent directement dans la fiche, GIF animés compris.
+          content.append(inlineImage(url,doc.title||'Illustration pédagogique',doc.title||''));
+        }else{
+          const li=node('li');const link=node('a','',doc.title||'Ouvrir un document');
+          link.href=url;link.target='_blank';link.rel='noopener noreferrer';li.append(link);list.append(li);
+        }
       }
-      body.append(list);
+      if(content.children.length||list.children.length){
+        body.append(node('h2','','Documents et images complémentaires'));
+        if(content.children.length)body.append(content);
+        if(list.children.length)body.append(list);
+      }
     }
     updateReaderFavorite();setReadingPrefs();showView('read');
   }
   function allowedDocumentUrl(value){
     if(typeof value!=='string'||!value.trim())return null;
     try{const url=new URL(value,document.baseURI);return ['https:','http:'].includes(url.protocol)?url.href:null;}catch{return null;}
+  }
+  function isImageUrl(value){
+    try{return /\.(?:png|jpe?g|webp|gif)$/i.test(new URL(value,document.baseURI).pathname);}catch{return false;}
+  }
+  function inlineImage(src,alt,caption){
+    const figure=node('figure','figure inline-media');
+    const img=node('img','inline-media-image');
+    img.src=src;img.alt=alt;img.loading='lazy';img.decoding='async';
+    const controls=node('div','inline-media-controls');
+    const enlarge=node('button','image-enlarge','Agrandir l’image');
+    enlarge.type='button';
+    enlarge.addEventListener('click',()=>{
+      const dialog=byId('imageDialog');
+      const large=byId('imageDialogPicture');
+      large.src=src;large.alt=alt;
+      byId('imageDialogCaption').textContent=caption||alt;
+      dialog.showModal();
+    });
+    img.addEventListener('error',()=>{img.hidden=true;enlarge.hidden=true;figure.append(node('p','media-error','Cette image n’est pas disponible.'));});
+    controls.append(enlarge);
+    figure.append(img);
+    if(caption)figure.append(node('figcaption','',caption));
+    figure.append(controls);
+    return figure;
   }
   function updateReaderFavorite(){
     const is=isFav(state.current);const b=byId('btnFavoriteRead');b.textContent=is?'★ Dans mes favoris':'☆ Ajouter aux favoris';b.setAttribute('aria-pressed',String(is));

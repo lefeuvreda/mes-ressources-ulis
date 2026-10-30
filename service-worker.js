@@ -1,4 +1,4 @@
-const CACHE = 'mes-ressources-v5-media';
+const CACHE = 'mes-ressources-v6-inline-images';
 const ASSETS = ['./','./index.html','./styles.css','./content.js','./app.js','./config.js','./cloud.js','./enseignant.html','./enseignant.css','./enseignant.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));

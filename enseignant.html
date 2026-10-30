@@ -97,12 +97,12 @@
             <div class="section-heading section-break"><span class="section-number">2</span><div><h2>Contenu de la fiche</h2><p>Ajoutez des explications, étapes, exemples et questions de vérification.</p></div></div>
             <div id="blocksEditor" class="blocks-editor"></div>
             <div class="add-block"><label for="blockType">Ajouter un bloc</label><select id="blockType"><option value="text">Explication</option><option value="steps">Méthode en étapes</option><option value="bullets">Liste de repères</option><option value="example">Exemple</option><option value="note">À retenir</option><option value="check">Question avec réponse</option><option value="image">Image / schéma</option></select><button type="button" id="addBlock" class="btn soft">＋ Ajouter</button></div>
-            <div class="section-heading section-break"><span class="section-number">3</span><div><h2>Documents et médias complémentaires</h2><p>Ajoutez un fichier depuis votre appareil ou choisissez un document déjà stocké dans Supabase. Les élèves voient les liens lorsque la fiche est publiée.</p></div></div>
+            <div class="section-heading section-break"><span class="section-number">3</span><div><h2>Documents et médias complémentaires</h2><p>Ajoutez un fichier depuis votre appareil ou choisissez un document déjà stocké dans Supabase. Les images et GIF sont affichés directement dans la fiche élève après publication ; les autres documents conservent leurs liens.</p></div></div>
             <div class="editor-upload">
               <label for="editorFiles">Importer et associer des fichiers (PDF, GIF, image, audio, vidéo)</label>
               <input id="editorFiles" type="file" multiple accept=".pdf,.gif,.png,.jpg,.jpeg,.webp,.mp3,.ogg,.mp4,.webm,application/pdf,image/*,audio/mpeg,audio/ogg,video/mp4,video/webm">
               <div class="media-actions"><button id="uploadEditorFiles" type="button" class="btn primary">Importer et joindre à la fiche</button><button id="pickDocument" type="button" class="btn soft">Choisir dans la médiathèque</button></div>
-              <p class="field-hint">Le fichier est importé immédiatement dans le stockage public. Enregistrez ensuite la fiche comme « Publié » pour afficher le lien aux élèves.</p>
+              <p class="field-hint">Le fichier est importé immédiatement dans le stockage public. Enregistrez ensuite la fiche comme « Publié » : les images s’affichent directement et les autres fichiers restent accessibles par lien.</p>
             </div>
             <div id="documentsEditor" class="documents-editor"></div><button type="button" id="addDocument" class="btn soft">＋ Ajouter un lien externe</button>
             <div class="form-actions"><button class="btn primary" id="saveResource" type="submit">Enregistrer la fiche</button><button class="btn soft" id="previewResource" type="button">Prévisualiser</button><button class="btn ghost" id="cancelEdit" type="button">Annuler</button></div>
@@ -128,6 +128,10 @@
 <dialog id="mediaPickerDialog" class="media-picker-dialog" aria-labelledby="mediaPickerHeading">
   <div class="dialog-head"><div><span class="eyebrow">MÉDIATHÈQUE</span><h2 id="mediaPickerHeading">Choisir un fichier</h2></div><button type="button" id="mediaPickerClose" class="btn soft">Fermer ✕</button></div>
   <div class="picker-content"><input id="mediaPickerSearch" type="search" placeholder="Rechercher un fichier" aria-label="Rechercher dans la médiathèque"><p id="mediaPickerMessage" class="document-note"></p><div id="mediaPickerList" class="media-picker-list"></div></div>
+</dialog>
+<dialog id="mediaImageDialog" class="media-image-dialog" aria-labelledby="mediaImageName">
+  <div class="dialog-head"><h2 id="mediaImageName">Prévisualisation de l’image</h2><button id="closeMediaImage" type="button" class="btn soft">✕ Fermer</button></div>
+  <img id="mediaImageLarge" src="data:," alt="">
 </dialog>
 <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmHeading"><h2 id="confirmHeading">Confirmation</h2><p id="confirmText"></p><div class="dialog-actions"><button type="button" id="confirmCancel" class="btn soft">Annuler</button><button type="button" id="confirmOk" class="btn danger">Confirmer</button></div></dialog>
 </body>

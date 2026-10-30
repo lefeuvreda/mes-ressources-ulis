@@ -20,6 +20,9 @@
   let editingId = null, dirty = false, noticeTimeout;
   let mediaFiles = [], mediaBusy = false, mediaPickerMode = null, mediaPickerTarget = null;
   const isImage = name => /\.(gif|png|jpe?g|webp)$/i.test(name);
+  const imageFromUrl = url => {
+    try {return isImage(new URL(url,document.baseURI).pathname);}catch{return false;}
+  };
   const mediaCategory = name => isImage(name)?'image':/\.pdf$/i.test(name)?'pdf':/\.(mp3|ogg)$/i.test(name)?'audio':'video';
   const mediaSize = size => size >= 1024*1024 ? (size/(1024*1024)).toFixed(1)+' Mo' : Math.ceil((size||0)/1024)+' Ko';
 
@@ -221,6 +224,12 @@
     for(const [i,d] of docs.entries()){
       const card=el('div','doc-card');const head=el('div','block-title');head.append(el('strong','','Document '+(i+1)),button('Supprimer','square-btn remove',()=>{const items=readDocuments();items.splice(i,1);renderDocuments(items);dirty=true;}));
       card.append(head);const inputs=el('div','block-fields');inputs.append(field('Titre du document','title',d.title),field('Chemin local ou URL HTTPS','url',d.url,0,'Ex. : documents/cours-histoire.pdf'));
+      if(imageFromUrl(d.url)){
+        const preview=el('figure','doc-inline-preview');
+        const img=el('img');img.src=d.url;img.alt=d.title||'Image liée à la fiche';img.loading='lazy';
+        preview.append(img);preview.append(el('figcaption','','Aperçu de l’image jointe · visible directement par les élèves'));
+        card.append(preview);
+      }
       card.append(inputs);container.append(card);
     }
   }
@@ -236,7 +245,10 @@
     }
     const details=el('div','media-details');details.append(el('strong','',name),el('small','',mediaSize(media.size)));
     const links=el('div','media-card-actions');
-    const open=el('a','btn soft','Ouvrir');open.href=media.url;open.target='_blank';open.rel='noopener noreferrer';
+    const open=isImage(name)
+      ? button('Agrandir ici','btn soft',()=>showMediaImage(media.url,name))
+      : el('a','btn soft','Ouvrir');
+    if(!isImage(name)){open.href=media.url;open.target='_blank';open.rel='noopener noreferrer';}
     const copy=button('Copier le lien','btn soft',()=>copyMediaLink(media.url));
     const create=button('Créer une fiche','btn primary',()=>createFromMedia(media));
     const del=button('Supprimer','btn danger-outline',()=>askDeleteMedia(media));
@@ -266,6 +278,12 @@
     $('mediaCount').textContent=`${mediaFiles.length} fichier(s) dans Supabase · ${visible.length} affiché(s)`;
     $('mediaEmpty').hidden=visible.length!==0;
     $('mediaGrid').replaceChildren(...visible.map(displayMedia));
+  }
+  function showMediaImage(url,name){
+    const dialog=$('mediaImageDialog');
+    $('mediaImageName').textContent=name;
+    const img=$('mediaImageLarge');img.src=url;img.alt=name;
+    dialog.showModal();
   }
   function copyMediaLink(url){
     if(!navigator.clipboard?.writeText){window.prompt('Copiez le lien du fichier :',url);return;}
@@ -443,7 +461,19 @@
         const figure=el('figure','preview-figure');const img=el('img','preview-image');img.alt=b.alt;img.src=b.src;img.loading='lazy';figure.append(img);if(b.caption)figure.append(el('figcaption','',b.caption));content.append(figure);
       }
     }
-    if(r.documents.length){content.append(el('h2','','Documents complémentaires'));const box=el('div','preview-documents');for(const d of r.documents){const a=el('a','',d.title);a.href=d.url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);}content.append(box);}
+    if(r.documents.length){
+      const box=el('div','preview-documents');
+      for(const d of r.documents){
+        if(imageFromUrl(d.url)){
+          const figure=el('figure','preview-figure preview-inline-media');
+          const img=el('img','preview-image');img.src=d.url;img.alt=d.title||'Image pédagogique';img.loading='lazy';
+          figure.append(img,el('figcaption','',d.title||'Illustration'));box.append(figure);
+        }else{
+          const a=el('a','',d.title);a.href=d.url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);
+        }
+      }
+      content.append(el('h2','','Documents et images complémentaires'),box);
+    }
     $('previewDialog').showModal();
   }
   function download(filename,content,type){
@@ -553,6 +583,10 @@
     $('pickDocument').addEventListener('click',()=>openMediaPicker('document'));
     $('mediaPickerSearch').addEventListener('input',renderPicker);
     $('mediaPickerClose').addEventListener('click',()=>$('mediaPickerDialog').close());
+    $('closeMediaImage').addEventListener('click',()=>$('mediaImageDialog').close());
+    $('mediaImageDialog').addEventListener('click',event=>{
+      if(event.target===$('mediaImageDialog'))$('mediaImageDialog').close();
+    });
     $('previewResource').addEventListener('click',showPreview);
     $('closePreview').addEventListener('click',()=>$('previewDialog').close());
     $('backupBtn').addEventListener('click',exportBackup);
