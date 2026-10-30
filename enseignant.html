@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#203b56">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Espace enseignant · Mes ressources ULIS</title>
+  <link rel="stylesheet" href="enseignant.css">
+  <script defer src="config.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="cloud.js"></script>
+  <script defer src="content.js"></script>
+  <script defer src="enseignant.js"></script>
+</head>
+<body>
+<a class="skip" href="#contenu">Aller au contenu</a>
+<section id="authScreen" class="auth-screen" hidden aria-labelledby="authTitle">
+  <form id="authForm" class="auth-card">
+    <span class="eyebrow">ESPACE RÉSERVÉ</span>
+    <h1 id="authTitle">Connexion enseignant</h1>
+    <p>Identifiez-vous pour modifier les cours partagés avec les élèves. Seuls les comptes autorisés dans Supabase peuvent publier.</p>
+    <label>Adresse électronique professionnelle<input id="authEmail" type="email" autocomplete="username" required></label>
+    <label>Mot de passe<input id="authPassword" type="password" autocomplete="current-password" required></label>
+    <button class="btn primary" id="authSubmit" type="submit">Se connecter</button>
+    <p id="authMessage" role="alert" aria-live="polite"></p>
+    <a href="index.html">Revenir à l’espace élève</a>
+  </form>
+</section>
+<div class="layout" id="teacherWorkspace">
+  <aside class="sidebar" aria-label="Navigation enseignant">
+    <a class="brand" href="enseignant.html"><span class="brand-logo">M</span><span><strong>Mes ressources</strong><small>Espace enseignant</small></span></a>
+    <p class="side-label">ESPACE DE TRAVAIL</p>
+    <nav class="nav" aria-label="Sections">
+      <button type="button" class="nav-link is-active" data-view="library"><span aria-hidden="true">▦</span> Bibliothèque</button>
+      <button type="button" class="nav-link" data-view="editor"><span aria-hidden="true">＋</span> Nouvelle ressource</button>
+      <button type="button" class="nav-link" data-view="export"><span aria-hidden="true">⇩</span> Sauvegarder / diffuser</button>
+    </nav>
+    <div class="side-bottom"><span class="dot"></span> Synchronisation pédagogique<p>Aucun compte élève, aucune donnée nominative.</p></div>
+  </aside>
+  <div class="maincol">
+    <header class="topbar"><div class="mobile-brand">Mes ressources <small>Enseignant</small></div><span class="role-pill">Administration pédagogique · synchronisée</span><a class="link-student" href="index.html" target="_blank" rel="noopener">Voir l'espace élève ↗</a><button id="btnSignOut" type="button" class="btn soft" hidden>Se déconnecter</button></header>
+    <main id="contenu" tabindex="-1">
+      <div id="message" class="message" role="status" aria-live="polite" hidden></div><div id="cloudBanner" class="cloud-banner" role="status"></div>
+      <section id="libraryView" class="view">
+        <div class="page-heading"><div><p class="eyebrow">PILOTER LES SUPPORTS</p><h1>Bibliothèque pédagogique</h1><p>Retrouvez, corrigez et préparez les cours accessibles aux élèves de la 6e à la 3e.</p></div><button id="newTop" class="btn primary" type="button">＋ Créer une ressource</button></div>
+        <div class="stats" aria-label="Statistiques de la bibliothèque">
+          <div class="stat"><span>Ressources</span><strong id="statTotal">0</strong><small>Toutes disciplines</small></div>
+          <div class="stat"><span>Publiées</span><strong id="statReady">0</strong><small>Visibles immédiatement sur les tablettes</small></div>
+          <div class="stat"><span>Brouillons</span><strong id="statDraft">0</strong><small>Non visibles après diffusion</small></div>
+          <div class="stat"><span>Niveaux</span><strong>4</strong><small>6e · 5e · 4e · 3e</small></div>
+        </div>
+        <div class="panel list-panel"><div class="panel-head"><div><h2>Mes contenus</h2><p><span id="listCount">0</span> résultats</p></div><button class="btn soft" id="resetFilters" type="button">Effacer les filtres</button></div>
+          <div class="filters">
+            <label class="filter-search"><span class="sr-only">Rechercher par titre et mots clés</span><input id="filterSearch" type="search" placeholder="Rechercher un cours, une notion, un mot-clé…"></label>
+            <label><span>Niveau</span><select id="filterLevel"><option value="">Tous niveaux</option><option>6e</option><option>5e</option><option>4e</option><option>3e</option><option>Tous</option></select></label>
+            <label><span>Discipline</span><select id="filterSubject"><option value="">Toutes disciplines</option><option>Français</option><option>Mathématiques</option><option>Histoire-Géo</option><option>Sciences</option><option>Anglais</option><option>Méthodes</option></select></label>
+            <label><span>État</span><select id="filterStatus"><option value="">Tous états</option><option value="ready">Publié</option><option value="draft">Brouillon</option></select></label>
+          </div>
+          <div class="table-wrap"><table class="resources-table"><thead><tr><th>Ressource</th><th>Niveau</th><th>Type</th><th>État</th><th class="actions-title">Actions</th></tr></thead><tbody id="resourcesBody"></tbody></table></div>
+          <p id="emptyList" class="empty" hidden>Aucune fiche ne correspond à votre recherche. Modifiez les filtres ou créez un nouveau contenu.</p>
+        </div>
+      </section>
+      <section id="editorView" class="view" hidden>
+        <div class="page-heading slim"><div><p class="eyebrow">CRÉATION / MODIFICATION</p><h1 id="editorHeading">Nouvelle ressource</h1><p>Organisez une fiche claire, structurée et accessible.</p></div><button id="backList" class="btn soft" type="button">← Bibliothèque</button></div>
+        <div class="editor-layout">
+          <form id="resourceForm" class="panel editor-form" novalidate>
+            <div class="section-heading"><span class="section-number">1</span><div><h2>Informations générales</h2><p>Ces informations servent au classement et à la recherche.</p></div></div>
+            <div class="form-grid">
+              <label class="full">Titre de la ressource <span class="required">*</span><input type="text" id="fieldTitle" maxlength="140" required placeholder="Ex. : Comparer deux fractions"></label>
+              <label>Niveau <span class="required">*</span><select id="fieldLevel" required><option>6e</option><option selected>5e</option><option>4e</option><option>3e</option><option value="Tous">Tous les niveaux</option></select></label>
+              <label>Discipline <span class="required">*</span><select id="fieldSubject" required><option>Français</option><option>Mathématiques</option><option>Histoire-Géo</option><option>Sciences</option><option>Anglais</option><option>Méthodes</option></select></label>
+              <label>Type de fiche <select id="fieldKind"><option value="cours">Cours</option><option value="methode">Fiche méthode</option><option value="outil">Outil</option></select></label>
+              <label>État <select id="fieldStatus"><option value="draft">Brouillon (invisible aux élèves)</option><option value="ready">Publié</option></select></label>
+              <label class="full">Présentation courte <span class="required">*</span><textarea id="fieldSummary" rows="2" maxlength="340" required placeholder="Ce que l'élève va apprendre…"></textarea></label>
+              <label class="full">Mots-clés (facultatif)<input id="fieldKeywords" type="text" placeholder="fractions, comparaison, numérateur"></label>
+            </div>
+            <div class="section-heading section-break"><span class="section-number">2</span><div><h2>Contenu de la fiche</h2><p>Ajoutez des explications, étapes, exemples et questions de vérification.</p></div></div>
+            <div id="blocksEditor" class="blocks-editor"></div>
+            <div class="add-block"><label for="blockType">Ajouter un bloc</label><select id="blockType"><option value="text">Explication</option><option value="steps">Méthode en étapes</option><option value="bullets">Liste de repères</option><option value="example">Exemple</option><option value="note">À retenir</option><option value="check">Question avec réponse</option><option value="image">Image / schéma</option></select><button type="button" id="addBlock" class="btn soft">＋ Ajouter</button></div>
+            <div class="section-heading section-break"><span class="section-number">3</span><div><h2>Documents complémentaires</h2><p>Associez un PDF déjà présent dans le dossier du site ou accessible via une URL.</p></div></div>
+            <div id="documentsEditor" class="documents-editor"></div><button type="button" id="addDocument" class="btn soft">＋ Ajouter un lien de document</button>
+            <div class="form-actions"><button class="btn primary" id="saveResource" type="submit">Enregistrer la fiche</button><button class="btn soft" id="previewResource" type="button">Prévisualiser</button><button class="btn ghost" id="cancelEdit" type="button">Annuler</button></div>
+            <p class="field-hint">En mode connecté, « Enregistrer » publie immédiatement toute fiche dont l’état est « Publié ». Les brouillons restent invisibles. Une connexion est nécessaire.</p>
+          </form>
+          <aside class="editor-help"><div class="help-panel"><strong>Conseils TSLA</strong><ul><li>Une idée principale par section.</li><li>Des consignes explicites et des phrases courtes.</li><li>Des étapes numérotées pour les procédures.</li><li>Des exemples concrets et contextualisés.</li><li>Une question pour vérifier la compréhension.</li></ul></div><div class="help-panel mini"><strong>Accessibilité</strong><p>Pour chaque image, renseignez un texte alternatif qui décrit l'information utile.</p><p>Évitez de transmettre une information uniquement par couleur.</p></div></aside>
+        </div>
+      </section>
+      <section id="exportView" class="view" hidden>
+        <div class="page-heading"><div><p class="eyebrow">CONSERVER ET PARTAGER</p><h1>Sauvegarder et diffuser</h1><p>En mode connecté, chaque fiche publiée est enregistrée durablement en base et synchronisée vers les tablettes.</p></div></div>
+        <div class="export-grid">
+          <div class="panel action-panel"><span class="action-icon">⇩</span><h2>1. Sauvegarde enseignant</h2><p>Enregistrez toutes vos fiches, y compris les brouillons. Gardez ce fichier dans un espace professionnel approprié.</p><button id="backupBtn" type="button" class="btn primary">Télécharger la sauvegarde JSON</button><div class="subaction"><label for="importFile">Importer des fiches depuis une sauvegarde</label><input id="importFile" type="file" accept=".json,application/json"><button class="btn soft" id="importBtn" type="button">Importer le fichier</button></div></div>
+          <div class="panel action-panel"><span class="action-icon">↗</span><h2>2. Synchronisation des tablettes</h2><p>En mode connecté, les fiches publiées arrivent automatiquement sur les tablettes. Vous pouvez vérifier la connexion et télécharger un export de secours.</p><button id="publishBtn" type="button" class="btn primary">Télécharger un export de secours</button><div class="publish-help"><strong>En mode connecté</strong><p>Aucune manipulation de fichier : un cours publié dans l’éditeur devient accessible aux élèves dès la synchronisation. L’export est uniquement une copie de secours, pas le mécanisme de publication.</p></div></div>
+        </div>
+        <div class="warning"><strong>Important — publication et confidentialité</strong><p>La synchronisation permanente n’est active qu’après configuration de Supabase et publication du site HTTPS. Si le site élève est public, toutes les fiches publiées sont lisibles par quiconque connaît l’adresse. Ne placez aucune donnée d’élève, PPS, bilan ou information de santé dans les fiches. Les PDF et images liés par URL doivent être publiés séparément et avec les droits nécessaires.</p></div>
+        <div class="panel reset-panel"><div><h2>Repartir des 29 fiches de démonstration</h2><p>En mode connecté, ce bouton AJOUTE les 29 fiches d’exemple comme brouillons : il ne supprime aucun contenu existant et ne les rend pas visibles aux élèves. En mode local, il réinitialise la démonstration.</p></div><button type="button" id="restoreDefaults" class="btn danger-outline">Importer les exemples</button></div>
+      </section>
+    </main>
+    <footer><span>ULIS TSLA · Publication synchronisée si configurée</span><span>Pas de compte ni de données personnelles d'élèves</span></footer>
+  </div>
+</div>
+<dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewHeading"><div class="dialog-head"><div><span class="eyebrow">APERÇU ÉLÈVE</span><h2 id="previewHeading">Prévisualisation</h2></div><button type="button" id="closePreview" class="btn soft">Fermer ✕</button></div><div id="previewContent" class="preview-content"></div></dialog>
+<dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmHeading"><h2 id="confirmHeading">Confirmation</h2><p id="confirmText"></p><div class="dialog-actions"><button type="button" id="confirmCancel" class="btn soft">Annuler</button><button type="button" id="confirmOk" class="btn danger">Confirmer</button></div></dialog>
+</body>
+</html>
