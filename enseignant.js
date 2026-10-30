@@ -18,6 +18,11 @@
   const defaultLibrary = () => BASE.map(r=>({...clone(r),status:'ready'}));
   let library = LIVE ? [] : readLocal();
   let editingId = null, dirty = false, noticeTimeout;
+  let mediaFiles = [], mediaBusy = false, mediaPickerMode = null, mediaPickerTarget = null;
+  const isImage = name => /\.(gif|png|jpe?g|webp)$/i.test(name);
+  const mediaCategory = name => isImage(name)?'image':/\.pdf$/i.test(name)?'pdf':/\.(mp3|ogg)$/i.test(name)?'audio':'video';
+  const mediaSize = size => size >= 1024*1024 ? (size/(1024*1024)).toFixed(1)+' Mo' : Math.ceil((size||0)/1024)+' Ko';
+
   function readLocal(){
     try {
       const json=localStorage.getItem(STORAGE_KEY);
@@ -73,6 +78,7 @@
       if(!authenticated)throw Error('Connexion enseignant requise.');
       await CLOUD.upsert(resource);
       library=validateCollection(await CLOUD.all());
+      $('cloudBanner').textContent=`● En ligne — ${library.filter(r=>r.status==='ready').length} fiche(s) publiées. Toute modification enregistrée est partagée automatiquement.`;
       return true;
     }
     const items=[...library];const index=items.findIndex(r=>r.id===resource.id);
@@ -104,13 +110,14 @@
     noticeTimeout=setTimeout(()=>{box.hidden=true},8500);
   }
   function showView(view){
-    for(const name of ['library','editor','export'])$(name+'View').hidden=name!==view;
+    for(const name of ['library','editor','media','export'])$(name+'View').hidden=name!==view;
     for(const button of document.querySelectorAll('.nav-link'))button.classList.toggle('is-active',button.dataset.view===view);
     if(view==='library')renderLibrary();
+    if(view==='media')void loadMedia();
     window.scrollTo({top:0,behavior:'instant'});
     $('contenu').focus({preventScroll:true});
   }
-  function canLeave(){return !dirty||window.confirm('Des modifications de cette fiche ne sont pas enregistrées. Les abandonner ?');}
+  function canLeave(){if(mediaBusy){notify('Import de fichiers en cours : terminez cette opération avant de quitter.',true);return false;}return !dirty||window.confirm('Des modifications de cette fiche ne sont pas enregistrées. Les abandonner ?');}
   function navigate(view){
     if(!canLeave())return;
     if(view==='editor')startNew();
@@ -150,6 +157,7 @@
     editingId=id;fillEditor(resource);$('editorHeading').textContent='Modifier une ressource';dirty=false;showView('editor');
   }
   function fillEditor(r){
+    $('editorFiles').value='';
     $('fieldTitle').value=r.title;
     $('fieldLevel').value=r.level;$('fieldSubject').value=r.subject;$('fieldKind').value=r.kind;$('fieldStatus').value=r.status;
     $('fieldSummary').value=r.summary;$('fieldKeywords').value=r.keywords||'';
@@ -176,7 +184,10 @@
       else if(b.kind==='steps'||b.kind==='bullets')inputs.append(field('Titre','title',b.title),field('Une étape ou une idée par ligne','items',(b.items||[]).join('\n'),5));
       else if(b.kind==='note'||b.kind==='example')inputs.append(field('Texte','text',b.text,4));
       else if(b.kind==='check')inputs.append(field('Question','question',b.question,2),field('Réponse à dévoiler','answer',b.answer,3));
-      else if(b.kind==='image')inputs.append(field('Chemin de l’image ou URL HTTPS','src',b.src,0,'Ex. : images/carte-france.png'),field('Description textuelle de l’image','alt',b.alt,2),field('Légende facultative','caption',b.caption));
+      else if(b.kind==='image'){
+        const srcField=field('Chemin de l’image ou URL HTTPS','src',b.src,0,'GIF, PNG, JPG, WebP — Ex. : images/carte-france.png');
+        inputs.append(srcField,button('Choisir une image de la médiathèque','btn soft',()=>openMediaPicker('image',srcField.querySelector('[data-key="src"]'))),field('Description textuelle de l’image','alt',b.alt,2),field('Légende facultative','caption',b.caption));
+      }
       card.append(inputs);container.append(card);
     }
     const empty=el('p','document-note','Aucun bloc ajouté. Commencez par une explication ou une fiche méthode.');
@@ -212,6 +223,142 @@
       card.append(head);const inputs=el('div','block-fields');inputs.append(field('Titre du document','title',d.title),field('Chemin local ou URL HTTPS','url',d.url,0,'Ex. : documents/cours-histoire.pdf'));
       card.append(inputs);container.append(card);
     }
+  }
+  function displayMedia(media){
+    const name=media.name||media.path.split('/').pop();
+    const item=el('div','media-item');
+    const thumb=el('div','media-thumb');
+    if(isImage(name)){
+      const img=el('img');img.alt='Aperçu de '+name;img.src=media.url;img.loading='lazy';thumb.append(img);
+    }else{
+      const icon=mediaCategory(name)==='pdf'?'PDF':mediaCategory(name)==='audio'?'AUDIO':'VIDÉO';
+      thumb.append(el('span','',icon));
+    }
+    const details=el('div','media-details');details.append(el('strong','',name),el('small','',mediaSize(media.size)));
+    const links=el('div','media-card-actions');
+    const open=el('a','btn soft','Ouvrir');open.href=media.url;open.target='_blank';open.rel='noopener noreferrer';
+    const copy=button('Copier le lien','btn soft',()=>copyMediaLink(media.url));
+    const create=button('Créer une fiche','btn primary',()=>createFromMedia(media));
+    const del=button('Supprimer','btn danger-outline',()=>askDeleteMedia(media));
+    const used=mediaReferences(media.url);
+    if(used.length){del.disabled=true;del.title='Fichier utilisé dans : '+used.map(r=>r.title).join(', ');}
+    links.append(open,copy,create,del);
+    item.append(thumb,details,el('p','media-references',used.length?`Associé à ${used.length} fiche(s)`:'Non associé à une fiche'),links);
+    return item;
+  }
+  function mediaReferences(url){
+    return library.filter(r=>r.documents?.some(d=>d.url===url)||r.blocks?.some(b=>b.kind==='image'&&b.src===url));
+  }
+  async function loadMedia(force=false){
+    if(!LIVE||!authenticated){
+      $('mediaCount').textContent='Connectez Supabase pour téléverser et partager des fichiers.';
+      $('mediaGrid').replaceChildren();return;
+    }
+    if(mediaBusy&&!force)return;
+    $('mediaCount').textContent='Chargement des fichiers…';
+    try{mediaFiles=await CLOUD.listMedia();renderMedia();}
+    catch(err){$('mediaCount').textContent='Impossible de charger les fichiers : '+errorMessage(err);notify('Médiathèque indisponible : '+errorMessage(err),true);}
+  }
+  function renderMedia(){
+    const search=clean($('mediaSearch').value).toLocaleLowerCase('fr');
+    const kind=$('mediaType').value;
+    const visible=mediaFiles.filter(m=>(kind==='all'||mediaCategory(m.name)===kind)&&m.name.toLocaleLowerCase('fr').includes(search));
+    $('mediaCount').textContent=`${mediaFiles.length} fichier(s) dans Supabase · ${visible.length} affiché(s)`;
+    $('mediaEmpty').hidden=visible.length!==0;
+    $('mediaGrid').replaceChildren(...visible.map(displayMedia));
+  }
+  function copyMediaLink(url){
+    if(!navigator.clipboard?.writeText){window.prompt('Copiez le lien du fichier :',url);return;}
+    navigator.clipboard.writeText(url).then(()=>notify('Lien public copié.')).catch(()=>window.prompt('Copiez le lien du fichier :',url));
+  }
+  async function uploadFiles(input,attach){
+    if(!LIVE || !authenticated){notify('Le stockage nécessite une connexion enseignant à Supabase.',true);return;}
+    const files=[...(input.files||[])];
+    if(!files.length){notify('Choisissez au moins un fichier à importer.',true);return;}
+    if(mediaBusy)return;
+    // Vérifier toute la sélection avant de commencer les transferts.
+    try{files.forEach(f=>CLOUD.checkMedia(f));}
+    catch(err){notify(errorMessage(err),true);return;}
+    mediaBusy=true;
+    const btn=$(attach?'uploadEditorFiles':'mediaUpload');btn.disabled=true;
+    const progress=$('mediaProgress');progress.hidden=attach;progress.value=0;
+    let done=0;
+    try{
+      for(const file of files){
+        $('mediaUploadStatus').textContent=`Import ${done+1}/${files.length} : ${file.name}`;
+        const uploaded=await CLOUD.uploadMedia(file);
+        done++;
+        if(attach){
+          const current=readDocuments();current.push({title:uploaded.name,url:uploaded.url});
+          renderDocuments(current);dirty=true;
+        }
+        progress.value=Math.round(100*done/files.length);
+      }
+      input.value='';
+      notify(`${done} fichier(s) importé(s) dans Supabase${attach?' et associés à cette fiche':''}. ${attach?'Enregistrez la fiche pour publier les liens.':''}`);
+    }catch(err){notify(`${done} fichier(s) importé(s), puis échec : ${errorMessage(err)}. Vérifiez la médiathèque avant de recommencer.`,true);}
+    finally{mediaBusy=false;btn.disabled=false;$('mediaUploadStatus').textContent='';progress.hidden=true;await loadMedia(true);}
+  }
+  function createFromMedia(media){
+    if(!canLeave())return;
+    const r=newResource();
+    r.title=media.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ').slice(0,140)||'Document pédagogique';
+    r.summary='Consulte le support joint et utilise-le pour travailler la leçon.';
+    if(isImage(media.name)){
+      r.blocks=[{kind:'image',src:media.url,alt:'Illustration pédagogique : '+r.title,caption:''}];
+    }else{
+      r.blocks=[{kind:'note',text:'Ouvre le document dans la section « Documents complémentaires ».'}];
+      r.documents=[{title:media.name,url:media.url}];
+    }
+    editingId=null;fillEditor(r);$('editorHeading').textContent='Nouvelle fiche avec fichier';dirty=true;showView('editor');
+    notify('Choisissez le niveau et la discipline, puis passez la fiche en « Publié » et enregistrez.');
+  }
+  function openMediaPicker(mode,target=null){
+    if(!LIVE||!authenticated){notify('La médiathèque nécessite une connexion à Supabase.',true);return;}
+    mediaPickerMode=mode;mediaPickerTarget=target;
+    $('mediaPickerHeading').textContent=mode==='image'?'Choisir une image ou un GIF':'Associer un fichier à la fiche';
+    $('mediaPickerSearch').value='';
+    $('mediaPickerMessage').textContent='Chargement…';
+    $('mediaPickerDialog').showModal();
+    void (async()=>{
+      try{mediaFiles=await CLOUD.listMedia();renderPicker();}
+      catch(err){$('mediaPickerMessage').textContent='Impossible de charger la médiathèque : '+errorMessage(err);}
+    })();
+  }
+  function renderPicker(){
+    if(!$('mediaPickerDialog').open)return;
+    const term=clean($('mediaPickerSearch').value).toLocaleLowerCase('fr');
+    const shown=mediaFiles.filter(m=>(mediaPickerMode!=='image'||isImage(m.name))&&m.name.toLocaleLowerCase('fr').includes(term));
+    $('mediaPickerMessage').textContent=`${shown.length} fichier(s) disponible(s).`;
+    const items=shown.map(m=>{
+      const entry=el('div','picker-item');entry.append(el('span','picker-filename',m.name));
+      const btn=button('Utiliser','btn soft',()=>{
+        if(mediaPickerMode==='image'&&mediaPickerTarget){
+          mediaPickerTarget.value=m.url;
+          const card=mediaPickerTarget.closest('.block-card');
+          const alt=card?.querySelector('[data-key="alt"]');
+          if(alt&&!alt.value)alt.value=m.name.replace(/\.[^.]+$/,'').replace(/[-_]/g,' ');
+        }else{
+          const docs=readDocuments();docs.push({title:m.name,url:m.url});renderDocuments(docs);
+        }
+        dirty=true;$('mediaPickerDialog').close();
+      });entry.append(btn);return entry;
+    });
+    $('mediaPickerList').replaceChildren(...items);
+  }
+  function askDeleteMedia(media){
+    const refs=mediaReferences(media.url);
+    if(refs.length){notify('Impossible de supprimer ce fichier : retirez-le d’abord des fiches associées, puis enregistrez.',true);return;}
+    confirmAction('Supprimer définitivement ce fichier ?',`« ${media.name} » sera retiré de Supabase. Tous les liens directs existants cesseront de fonctionner.`,async()=>{
+      try{
+        // Recharger les fiches avant la suppression pour réduire le risque d'effacer un fichier utilisé.
+        library=validateCollection(await CLOUD.all());
+        if(mediaReferences(media.url).length)throw Error('Ce fichier est désormais utilisé dans une fiche. Suppression annulée.');
+        await CLOUD.deleteMedia(media.path);
+        await loadMedia(true);
+        notify('Fichier supprimé de Supabase.');
+      }catch(err){notify('Suppression impossible : '+errorMessage(err),true);}
+    });
   }
   function readDocuments(){return [...$('documentsEditor').querySelectorAll('.doc-card')].map(card=>{const a={};for(const inp of card.querySelectorAll('[data-key]'))a[inp.dataset.key]=inp.value;return a;});}
   function safeAsset(value){
@@ -340,6 +487,7 @@
     $('teacherWorkspace').hidden=false;
     $('btnSignOut').hidden=false;
     authenticated=true;
+    void loadMedia();
     await reloadCloud(true);
     unsubscribe?.();
     try{unsubscribe=CLOUD.watch(()=>{if(!dirty)void reloadCloud(true);},status=>{
@@ -397,6 +545,14 @@
     $('resourceForm').addEventListener('input',()=>{dirty=true;});$('resourceForm').addEventListener('change',()=>{dirty=true;});
     $('addBlock').addEventListener('click',appendBlock);
     $('addDocument').addEventListener('click',()=>{const d=readDocuments();d.push({title:'',url:''});renderDocuments(d);dirty=true;});
+    $('mediaUpload').addEventListener('click',()=>void uploadFiles($('mediaFiles'),false));
+    $('uploadEditorFiles').addEventListener('click',()=>void uploadFiles($('editorFiles'),true));
+    $('mediaRefresh').addEventListener('click',()=>void loadMedia(true));
+    $('mediaSearch').addEventListener('input',renderMedia);
+    $('mediaType').addEventListener('change',renderMedia);
+    $('pickDocument').addEventListener('click',()=>openMediaPicker('document'));
+    $('mediaPickerSearch').addEventListener('input',renderPicker);
+    $('mediaPickerClose').addEventListener('click',()=>$('mediaPickerDialog').close());
     $('previewResource').addEventListener('click',showPreview);
     $('closePreview').addEventListener('click',()=>$('previewDialog').close());
     $('backupBtn').addEventListener('click',exportBackup);

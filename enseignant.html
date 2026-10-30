@@ -34,6 +34,7 @@
     <nav class="nav" aria-label="Sections">
       <button type="button" class="nav-link is-active" data-view="library"><span aria-hidden="true">▦</span> Bibliothèque</button>
       <button type="button" class="nav-link" data-view="editor"><span aria-hidden="true">＋</span> Nouvelle ressource</button>
+      <button type="button" class="nav-link" data-view="media"><span aria-hidden="true">▧</span> Médiathèque</button>
       <button type="button" class="nav-link" data-view="export"><span aria-hidden="true">⇩</span> Sauvegarder / diffuser</button>
     </nav>
     <div class="side-bottom"><span class="dot"></span> Synchronisation pédagogique<p>Aucun compte élève, aucune donnée nominative.</p></div>
@@ -61,6 +62,24 @@
           <p id="emptyList" class="empty" hidden>Aucune fiche ne correspond à votre recherche. Modifiez les filtres ou créez un nouveau contenu.</p>
         </div>
       </section>
+      <section id="mediaView" class="view" hidden>
+        <div class="page-heading"><div><p class="eyebrow">FICHIERS PARTAGÉS</p><h1>Médiathèque pédagogique</h1><p>Importez des PDF, GIF, images, fichiers audio et vidéos. Associez-les ensuite aux fiches publiées.</p></div></div>
+        <div class="panel media-upload-panel">
+          <h2>Ajouter des fichiers depuis cet appareil</h2>
+          <p>PDF, GIF, PNG, JPG, WebP, MP3, OGG, MP4, WebM. Maximum : 20 Mo par fichier. Les fichiers déposés dans cet espace public sont accessibles à toute personne qui connaît leur adresse, même s'ils ne sont pas encore liés à une fiche.</p>
+          <label class="media-upload-label" for="mediaFiles">Sélectionner un ou plusieurs fichiers</label>
+          <input id="mediaFiles" type="file" multiple accept=".pdf,.gif,.png,.jpg,.jpeg,.webp,.mp3,.ogg,.mp4,.webm,application/pdf,image/*,audio/mpeg,audio/ogg,video/mp4,video/webm">
+          <button id="mediaUpload" type="button" class="btn primary">Importer dans Supabase</button>
+          <progress id="mediaProgress" value="0" max="100" hidden></progress>
+          <p id="mediaUploadStatus" class="media-upload-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="panel media-library-panel">
+          <div class="panel-head"><div><h2>Fichiers stockés</h2><p id="mediaCount">Chargement…</p></div><button id="mediaRefresh" type="button" class="btn soft">Actualiser</button></div>
+          <div class="media-filters"><input id="mediaSearch" type="search" placeholder="Rechercher un nom de fichier" aria-label="Rechercher un fichier"><select id="mediaType" aria-label="Filtrer les fichiers"><option value="all">Tous les types</option><option value="image">Images et GIF</option><option value="pdf">PDF</option><option value="audio">Audio</option><option value="video">Vidéo</option></select></div>
+          <div id="mediaGrid" class="media-grid" aria-live="polite"></div>
+          <p id="mediaEmpty" class="empty" hidden>Aucun fichier dans cette catégorie.</p>
+        </div>
+      </section>
       <section id="editorView" class="view" hidden>
         <div class="page-heading slim"><div><p class="eyebrow">CRÉATION / MODIFICATION</p><h1 id="editorHeading">Nouvelle ressource</h1><p>Organisez une fiche claire, structurée et accessible.</p></div><button id="backList" class="btn soft" type="button">← Bibliothèque</button></div>
         <div class="editor-layout">
@@ -78,8 +97,14 @@
             <div class="section-heading section-break"><span class="section-number">2</span><div><h2>Contenu de la fiche</h2><p>Ajoutez des explications, étapes, exemples et questions de vérification.</p></div></div>
             <div id="blocksEditor" class="blocks-editor"></div>
             <div class="add-block"><label for="blockType">Ajouter un bloc</label><select id="blockType"><option value="text">Explication</option><option value="steps">Méthode en étapes</option><option value="bullets">Liste de repères</option><option value="example">Exemple</option><option value="note">À retenir</option><option value="check">Question avec réponse</option><option value="image">Image / schéma</option></select><button type="button" id="addBlock" class="btn soft">＋ Ajouter</button></div>
-            <div class="section-heading section-break"><span class="section-number">3</span><div><h2>Documents complémentaires</h2><p>Associez un PDF déjà présent dans le dossier du site ou accessible via une URL.</p></div></div>
-            <div id="documentsEditor" class="documents-editor"></div><button type="button" id="addDocument" class="btn soft">＋ Ajouter un lien de document</button>
+            <div class="section-heading section-break"><span class="section-number">3</span><div><h2>Documents et médias complémentaires</h2><p>Ajoutez un fichier depuis votre appareil ou choisissez un document déjà stocké dans Supabase. Les élèves voient les liens lorsque la fiche est publiée.</p></div></div>
+            <div class="editor-upload">
+              <label for="editorFiles">Importer et associer des fichiers (PDF, GIF, image, audio, vidéo)</label>
+              <input id="editorFiles" type="file" multiple accept=".pdf,.gif,.png,.jpg,.jpeg,.webp,.mp3,.ogg,.mp4,.webm,application/pdf,image/*,audio/mpeg,audio/ogg,video/mp4,video/webm">
+              <div class="media-actions"><button id="uploadEditorFiles" type="button" class="btn primary">Importer et joindre à la fiche</button><button id="pickDocument" type="button" class="btn soft">Choisir dans la médiathèque</button></div>
+              <p class="field-hint">Le fichier est importé immédiatement dans le stockage public. Enregistrez ensuite la fiche comme « Publié » pour afficher le lien aux élèves.</p>
+            </div>
+            <div id="documentsEditor" class="documents-editor"></div><button type="button" id="addDocument" class="btn soft">＋ Ajouter un lien externe</button>
             <div class="form-actions"><button class="btn primary" id="saveResource" type="submit">Enregistrer la fiche</button><button class="btn soft" id="previewResource" type="button">Prévisualiser</button><button class="btn ghost" id="cancelEdit" type="button">Annuler</button></div>
             <p class="field-hint">En mode connecté, « Enregistrer » publie immédiatement toute fiche dont l’état est « Publié ». Les brouillons restent invisibles. Une connexion est nécessaire.</p>
           </form>
@@ -92,7 +117,7 @@
           <div class="panel action-panel"><span class="action-icon">⇩</span><h2>1. Sauvegarde enseignant</h2><p>Enregistrez toutes vos fiches, y compris les brouillons. Gardez ce fichier dans un espace professionnel approprié.</p><button id="backupBtn" type="button" class="btn primary">Télécharger la sauvegarde JSON</button><div class="subaction"><label for="importFile">Importer des fiches depuis une sauvegarde</label><input id="importFile" type="file" accept=".json,application/json"><button class="btn soft" id="importBtn" type="button">Importer le fichier</button></div></div>
           <div class="panel action-panel"><span class="action-icon">↗</span><h2>2. Synchronisation des tablettes</h2><p>En mode connecté, les fiches publiées arrivent automatiquement sur les tablettes. Vous pouvez vérifier la connexion et télécharger un export de secours.</p><button id="publishBtn" type="button" class="btn primary">Télécharger un export de secours</button><div class="publish-help"><strong>En mode connecté</strong><p>Aucune manipulation de fichier : un cours publié dans l’éditeur devient accessible aux élèves dès la synchronisation. L’export est uniquement une copie de secours, pas le mécanisme de publication.</p></div></div>
         </div>
-        <div class="warning"><strong>Important — publication et confidentialité</strong><p>La synchronisation permanente n’est active qu’après configuration de Supabase et publication du site HTTPS. Si le site élève est public, toutes les fiches publiées sont lisibles par quiconque connaît l’adresse. Ne placez aucune donnée d’élève, PPS, bilan ou information de santé dans les fiches. Les PDF et images liés par URL doivent être publiés séparément et avec les droits nécessaires.</p></div>
+        <div class="warning"><strong>Important — publication et confidentialité</strong><p>La synchronisation permanente n’est active qu’après configuration de Supabase et publication du site HTTPS. Si le site élève est public, toutes les fiches publiées sont lisibles par quiconque connaît l’adresse. Ne placez aucune donnée d’élève, PPS, bilan ou information de santé dans les fiches. Les documents stockés dans la médiathèque publique sont accessibles par leur URL dès l’import, y compris lorsque la fiche est encore en brouillon. Les sauvegardes JSON ne contiennent pas les fichiers eux-mêmes.</p></div>
         <div class="panel reset-panel"><div><h2>Repartir des 29 fiches de démonstration</h2><p>En mode connecté, ce bouton AJOUTE les 29 fiches d’exemple comme brouillons : il ne supprime aucun contenu existant et ne les rend pas visibles aux élèves. En mode local, il réinitialise la démonstration.</p></div><button type="button" id="restoreDefaults" class="btn danger-outline">Importer les exemples</button></div>
       </section>
     </main>
@@ -100,6 +125,10 @@
   </div>
 </div>
 <dialog id="previewDialog" class="preview-dialog" aria-labelledby="previewHeading"><div class="dialog-head"><div><span class="eyebrow">APERÇU ÉLÈVE</span><h2 id="previewHeading">Prévisualisation</h2></div><button type="button" id="closePreview" class="btn soft">Fermer ✕</button></div><div id="previewContent" class="preview-content"></div></dialog>
+<dialog id="mediaPickerDialog" class="media-picker-dialog" aria-labelledby="mediaPickerHeading">
+  <div class="dialog-head"><div><span class="eyebrow">MÉDIATHÈQUE</span><h2 id="mediaPickerHeading">Choisir un fichier</h2></div><button type="button" id="mediaPickerClose" class="btn soft">Fermer ✕</button></div>
+  <div class="picker-content"><input id="mediaPickerSearch" type="search" placeholder="Rechercher un fichier" aria-label="Rechercher dans la médiathèque"><p id="mediaPickerMessage" class="document-note"></p><div id="mediaPickerList" class="media-picker-list"></div></div>
+</dialog>
 <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmHeading"><h2 id="confirmHeading">Confirmation</h2><p id="confirmText"></p><div class="dialog-actions"><button type="button" id="confirmCancel" class="btn soft">Annuler</button><button type="button" id="confirmOk" class="btn danger">Confirmer</button></div></dialog>
 </body>
 </html>

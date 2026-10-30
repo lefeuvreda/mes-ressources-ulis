@@ -67,5 +67,65 @@
       .subscribe(status=>{if(onStatus)onStatus(status);});
     return () => client().removeChannel(channel);
   }
-  window.ULIS_CLOUD={configured,client,published,all,upsert,upsertMany,remove,signIn,session,isTeacher,signOut,watch};
+  /* Médiathèque publique : seuls les comptes enseignants autorisés ont des
+     permissions d'écriture et de liste. Les URL publiques ne sont PAS privées. */
+  const MEDIA_BUCKET = 'ulis-public-media';
+  const MIME_TYPES = Object.freeze({
+    pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',
+    gif:'image/gif',webp:'image/webp',mp3:'audio/mpeg',ogg:'audio/ogg',
+    mp4:'video/mp4',webm:'video/webm'
+  });
+  const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+  function mediaExtension(name) { return String(name).split('.').pop().toLowerCase(); }
+  function checkMedia(file) {
+    if (!file || typeof file.name !== 'string') throw Error('Fichier invalide.');
+    const ext=mediaExtension(file.name), expected=MIME_TYPES[ext];
+    if (!expected) throw Error(`Format non autorisé : ${file.name}. Utilisez PDF, GIF, PNG, JPG, WebP, MP3, OGG, MP4 ou WebM.`);
+    if (!file.size || file.size > MAX_MEDIA_BYTES) throw Error(`Fichier ${file.name} : taille maximale de 20 Mo.`);
+    if (file.type && file.type !== expected && !(ext==='jpg' && file.type==='image/jpg')) {
+      throw Error(`Le type du fichier ${file.name} ne correspond pas à son extension.`);
+    }
+    return expected;
+  }
+  function mediaSafeName(name) {
+    const trimmed=String(name).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^[-.]+/,'').slice(-90);
+    return trimmed || 'media';
+  }
+  async function uploadMedia(file) {
+    const contentType=checkMedia(file);
+    const id=crypto.randomUUID();
+    const path=`uploads/${id}-${mediaSafeName(file.name)}`;
+    assertOk(await client().storage.from(MEDIA_BUCKET).upload(path,file,{
+      cacheControl:'3600',upsert:false,contentType
+    }));
+    return {path,url:publicMediaUrl(path),name:file.name,size:file.size};
+  }
+  function publicMediaUrl(path) {
+    return client().storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+  async function listMedia() {
+    const records=[];
+    for(let offset=0;offset<1000;offset+=100) {
+      const batch=assertOk(await client().storage.from(MEDIA_BUCKET).list('uploads',{
+        limit:100,offset,sortBy:{column:'created_at',order:'desc'}
+      }))||[];
+      records.push(...batch.filter(x=>x.name && x.id));
+      if(batch.length<100)break;
+    }
+    return records.map(x=>({
+      path:'uploads/'+x.name,
+      url:publicMediaUrl('uploads/'+x.name),
+      name:x.name.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i,''),
+      size:x.metadata?.size||0, createdAt:x.created_at||'',
+      type:(x.metadata?.mimetype||MIME_TYPES[mediaExtension(x.name)]||'')
+    }));
+  }
+  async function deleteMedia(path) {
+    if(typeof path!=='string'||!/^uploads\/[0-9a-f-]{36}-[a-z0-9._-]+$/i.test(path) || !MIME_TYPES[mediaExtension(path)])
+      throw Error('Chemin du fichier invalide.');
+    assertOk(await client().storage.from(MEDIA_BUCKET).remove([path]));
+  }
+  window.ULIS_CLOUD={configured,client,published,all,upsert,upsertMany,remove,signIn,session,isTeacher,signOut,watch,
+    MEDIA_BUCKET,MIME_TYPES,MAX_MEDIA_BYTES,checkMedia,uploadMedia,publicMediaUrl,listMedia,deleteMedia};
 })();

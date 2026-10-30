@@ -14,3 +14,40 @@
 .auth-card a{font-size:13px;color:#236a99}
 .auth-card #authMessage{min-height:22px;color:#8e493e}
 @media(max-width:530px){.auth-card{padding:24px}}
+
+/* V5 — Médiathèque partagée Supabase Storage */
+.media-upload-panel{padding:24px;margin-bottom:20px}
+.media-upload-panel h2{font-size:18px;margin:0 0 9px;color:#29445f}
+.media-upload-panel p{font-size:13px;line-height:1.65;color:#63778a;max-width:860px}
+.media-upload-label,.editor-upload label{display:block;color:#375672;font-size:13px;font-weight:750;margin-bottom:9px}
+.media-upload-panel input[type=file],.editor-upload input[type=file]{display:block;width:100%;max-width:670px;font-size:13px;border:1px solid #d7e3ed;background:#fff;border-radius:10px;padding:12px;margin:12px 0}
+.media-upload-panel .btn{margin-top:4px}
+.media-upload-status{font-size:12px!important;color:#275b80!important;min-height:1.1em;margin:10px 0 0!important}
+.media-upload-panel progress{display:block;max-width:460px;width:100%;height:12px;margin-top:15px;accent-color:#276791}
+.media-library-panel{padding-bottom:22px}
+.media-filters{display:flex;gap:10px;flex-wrap:wrap;padding:0 22px 19px}
+.media-filters input,.media-filters select,.picker-content input{border:1px solid #d5e0eb;background:#fff;border-radius:9px;padding:11px 12px;min-height:40px;color:#274057;font-size:13px}
+.media-filters input{flex:1;min-width:220px}
+.media-filters select{min-width:165px}
+.media-grid{padding:0 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px}
+.media-item{background:#fbfcfe;border:1px solid #e0e9f2;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.media-thumb{height:145px;display:grid;place-items:center;background:#eaf1f7;border-radius:9px;overflow:hidden;color:#416780;font-weight:800;letter-spacing:.04em;font-size:16px}
+.media-thumb img{width:100%;height:100%;object-fit:contain}
+.media-details{min-height:42px;display:flex;flex-direction:column;gap:5px;overflow-wrap:anywhere}
+.media-details strong{font-size:13px;color:#29445f}
+.media-details small,.media-references{font-size:11px;color:#71869b}
+.media-references{margin:0}
+.media-card-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.media-card-actions .btn{font-size:11px;padding:8px 10px;min-height:34px;white-space:normal}
+.media-card-actions a{text-decoration:none}
+.editor-upload{background:#f3f8fc;border:1px solid #d7e6f1;border-radius:12px;padding:18px;margin-bottom:21px}
+.editor-upload .field-hint{margin-bottom:0}
+.media-actions{display:flex;gap:10px;flex-wrap:wrap}
+.media-picker-dialog{border:0;border-radius:16px;width:min(680px,calc(100% - 24px));max-height:88vh;padding:0;background:#f7f9fc;color:#304962;box-shadow:0 24px 90px #162b425e}
+.media-picker-dialog::backdrop{background:#15263e80}
+.picker-content{padding:20px 25px;overflow:auto;max-height:calc(88vh - 95px)}
+.picker-content input{width:100%}
+.media-picker-list{display:grid;gap:8px}
+.picker-item{display:flex;align-items:center;justify-content:space-between;gap:12px;background:white;padding:12px;border:1px solid #e2eaf2;border-radius:9px}
+.picker-filename{font-size:13px;overflow-wrap:anywhere;min-width:0}
+@media(max-width:530px){.media-upload-panel{padding:16px}.media-filters,.media-grid{padding-left:14px;padding-right:14px}.media-filters input,.media-filters select{min-width:100%;width:100%}.picker-content{padding:13px}.picker-item{align-items:flex-start;flex-direction:column}.media-actions .btn{white-space:normal}}
