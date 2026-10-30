@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  // Version du lecteur : 7 (PNG/GIF intégrés).
   const CLOUD = window.ULIS_CLOUD;
   const LIVE = !!CLOUD?.configured();
   const CACHE_KEY = 'mr-published-remote-v1';
@@ -178,9 +179,9 @@
       for(const doc of r.documents){
         const url=allowedDocumentUrl(doc.url);
         if(!url)continue;
-        if(isImageUrl(url)){
-          // Les images jointes par « Importer et joindre à la fiche »
-          // apparaissent directement dans la fiche, GIF animés compris.
+        if(isImageUrl(url) || isImageName(doc.title)){
+          // Les fichiers image joints sont visibles directement dans la fiche.
+          // La détection par titre sert aussi aux URL dont le chemin ne contient pas d'extension.
           content.append(inlineImage(url,doc.title||'Illustration pédagogique',doc.title||''));
         }else{
           const li=node('li');const link=node('a','',doc.title||'Ouvrir un document');
@@ -199,8 +200,14 @@
     if(typeof value!=='string'||!value.trim())return null;
     try{const url=new URL(value,document.baseURI);return ['https:','http:'].includes(url.protocol)?url.href:null;}catch{return null;}
   }
+  function isImageName(value){
+    return typeof value==='string' && /\.(?:png|jpe?g|webp|gif)$/i.test(value.trim());
+  }
   function isImageUrl(value){
-    try{return /\.(?:png|jpe?g|webp|gif)$/i.test(new URL(value,document.baseURI).pathname);}catch{return false;}
+    try{
+      const pathname=decodeURIComponent(new URL(value,document.baseURI).pathname);
+      return isImageName(pathname);
+    }catch{return false;}
   }
   function inlineImage(src,alt,caption){
     const figure=node('figure','figure inline-media');
